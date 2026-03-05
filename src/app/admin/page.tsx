@@ -51,6 +51,11 @@ interface AccessRequest {
 }
 
 export default function AdminPage() {
+  const [authed, setAuthed] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [password, setPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+
   const [members, setMembers] = useState<AdminMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [digestResult, setDigestResult] = useState<string | null>(null);
@@ -67,7 +72,29 @@ export default function AdminPage() {
   const [requests, setRequests] = useState<AccessRequest[]>([]);
   const [approvingId, setApprovingId] = useState<string | null>(null);
 
+  // Check saved password on mount
   useEffect(() => {
+    const saved = sessionStorage.getItem("admin_pw");
+    if (saved) {
+      fetch("/api/admin/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: saved }),
+      })
+        .then((r) => {
+          if (r.ok) setAuthed(true);
+          else sessionStorage.removeItem("admin_pw");
+        })
+        .catch(() => {})
+        .finally(() => setCheckingAuth(false));
+    } else {
+      setCheckingAuth(false);
+    }
+  }, []);
+
+  // Load data once authed
+  useEffect(() => {
+    if (!authed) return;
     Promise.all([
       fetch("/api/admin/members").then((r) => r.json()),
       fetch("/api/hot-posts").then((r) => r.json()),
@@ -79,7 +106,67 @@ export default function AdminPage() {
         setRequests(requestsData.requests || []);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [authed]);
+
+  async function handlePasswordSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setAuthError("");
+    const res = await fetch("/api/admin/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
+    if (res.ok) {
+      sessionStorage.setItem("admin_pw", password);
+      setAuthed(true);
+    } else {
+      setAuthError("Wrong password");
+    }
+  }
+
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-[#070d1b] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-[#C8A951]/20 border-t-[#C8A951] rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!authed) {
+    return (
+      <div className="min-h-screen bg-[#070d1b] flex items-center justify-center px-4">
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-8">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#C8A951] to-[#8B6914] flex items-center justify-center mx-auto mb-4">
+              <span className="text-white text-xl">&#10022;</span>
+            </div>
+            <h1 className="text-xl font-bold text-white">Admin Access</h1>
+            <p className="text-sm text-white/30 mt-1">Enter the admin password to continue</p>
+          </div>
+          <form onSubmit={handlePasswordSubmit} className="space-y-4">
+            <input
+              type="password"
+              required
+              autoFocus
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-3 bg-white/[0.03] border border-white/[0.06] rounded-xl text-white placeholder-white/15 focus:outline-none focus:border-[#C8A951]/30 transition-colors"
+            />
+            {authError && (
+              <p className="text-sm text-red-400 text-center">{authError}</p>
+            )}
+            <button
+              type="submit"
+              className="w-full py-3 bg-[#C8A951] text-[#0B1120] font-semibold rounded-xl hover:bg-[#dbbf6a] transition-colors"
+            >
+              Enter
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   async function triggerDigest() {
     setSendingDigest(true);
