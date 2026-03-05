@@ -28,12 +28,28 @@ async function handleRegister(body: { x_handle: string; email: string; invite_co
     return NextResponse.json({ error: "Invalid X handle" }, { status: 400 });
   }
 
+  const db = getServiceClient();
+
   const validCodes = getValidInviteCodes();
-  if (!validCodes.includes(invite_code.trim())) {
-    return NextResponse.json({ error: "Invalid invite code" }, { status: 403 });
+  const trimmedCode = invite_code.trim();
+
+  // Check env-based codes
+  let codeValid = validCodes.includes(trimmedCode);
+
+  // Check DB-generated invite codes from approved requests
+  if (!codeValid) {
+    const { data: approvedReq } = await db
+      .from("access_requests")
+      .select("id")
+      .eq("invite_code", trimmedCode)
+      .eq("status", "approved")
+      .single();
+    if (approvedReq) codeValid = true;
   }
 
-  const db = getServiceClient();
+  if (!codeValid) {
+    return NextResponse.json({ error: "Invalid invite code" }, { status: 403 });
+  }
 
   // Check if handle already exists
   const { data: existing } = await db.from("members").select("id").eq("x_handle", handle).single();

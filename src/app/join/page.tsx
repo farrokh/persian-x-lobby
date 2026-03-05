@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function JoinPage() {
+function JoinForm() {
   const router = useRouter();
-  const [form, setForm] = useState({ x_handle: "", email: "", invite_code: "", display_name: "" });
+  const searchParams = useSearchParams();
+  const codeFromUrl = searchParams.get("code") || "";
+  const [form, setForm] = useState({ x_handle: "", email: "", invite_code: codeFromUrl, display_name: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -134,5 +136,17 @@ export default function JoinPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function JoinPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#070d1b] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-[#C8A951]/20 border-t-[#C8A951] rounded-full animate-spin" />
+      </div>
+    }>
+      <JoinForm />
+    </Suspense>
   );
 }

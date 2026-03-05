@@ -11,6 +11,11 @@ import {
   Heart,
   Repeat2,
   X,
+  UserPlus,
+  Check,
+  XCircle,
+  Clock,
+  Mail,
 } from "lucide-react";
 
 interface AdminMember {
@@ -34,6 +39,17 @@ interface HotPost {
   created_at: string;
 }
 
+interface AccessRequest {
+  id: string;
+  x_handle: string;
+  email: string;
+  name: string | null;
+  message: string | null;
+  status: "pending" | "approved" | "rejected";
+  invite_code: string | null;
+  created_at: string;
+}
+
 export default function AdminPage() {
   const [members, setMembers] = useState<AdminMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,14 +63,20 @@ export default function AdminPage() {
   const [addingPost, setAddingPost] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
 
+  // Access requests state
+  const [requests, setRequests] = useState<AccessRequest[]>([]);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+
   useEffect(() => {
     Promise.all([
       fetch("/api/admin/members").then((r) => r.json()),
       fetch("/api/hot-posts").then((r) => r.json()),
+      fetch("/api/admin/requests").then((r) => r.json()),
     ])
-      .then(([membersData, postsData]) => {
+      .then(([membersData, postsData, requestsData]) => {
         setMembers(membersData.members || []);
         setHotPosts(postsData.posts || []);
+        setRequests(requestsData.requests || []);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -118,6 +140,35 @@ export default function AdminPage() {
     }
   }
 
+  async function approveRequest(id: string) {
+    setApprovingId(id);
+    try {
+      const res = await fetch("/api/admin/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setRequests((prev) => prev.map((r) => r.id === id ? { ...r, status: "approved" as const, invite_code: data.inviteCode } : r));
+      } else {
+        alert(data.error || "Failed to approve");
+      }
+    } catch {
+      alert("Network error");
+    } finally {
+      setApprovingId(null);
+    }
+  }
+
+  async function rejectRequest(id: string) {
+    if (!confirm("Reject this request?")) return;
+    const res = await fetch(`/api/admin/requests?id=${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setRequests((prev) => prev.map((r) => r.id === id ? { ...r, status: "rejected" as const } : r));
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#070d1b] flex items-center justify-center">
@@ -149,6 +200,106 @@ export default function AdminPage() {
             {digestResult}
           </div>
         )}
+
+        {/* ════════════════════ ACCESS REQUESTS ════════════════════ */}
+        <section>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/10 flex items-center justify-center">
+              <UserPlus className="w-4 h-4 text-blue-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold">Access Requests</h2>
+              <p className="text-[11px] text-white/25 uppercase tracking-[0.12em]">
+                {requests.filter((r) => r.status === "pending").length} pending
+              </p>
+            </div>
+          </div>
+
+          {requests.filter((r) => r.status === "pending").length === 0 ? (
+            <div className="bg-white/[0.02] border border-white/[0.06] border-dashed rounded-2xl py-10 text-center">
+              <UserPlus className="w-8 h-8 text-white/10 mx-auto mb-3" />
+              <p className="text-sm text-white/25">No pending requests.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {requests.filter((r) => r.status === "pending").map((req) => (
+                <div
+                  key={req.id}
+                  className="flex items-start gap-4 bg-white/[0.02] border border-white/[0.06] rounded-xl px-5 py-4"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-semibold text-white/70">@{req.x_handle}</span>
+                      {req.name && <span className="text-xs text-white/25">({req.name})</span>}
+                      <span className="flex items-center gap-1 text-[11px] text-white/15">
+                        <Clock className="w-3 h-3" />
+                        {new Date(req.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-white/25 mb-1">
+                      <Mail className="w-3 h-3" /> {req.email}
+                    </div>
+                    {req.message && (
+                      <p className="text-sm text-white/35 leading-relaxed mt-2 bg-white/[0.02] rounded-lg px-3 py-2 border border-white/[0.04]">
+                        &ldquo;{req.message}&rdquo;
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => approveRequest(req.id)}
+                      disabled={approvingId === req.id}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg text-xs font-medium hover:bg-emerald-500/20 transition-all disabled:opacity-50"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      {approvingId === req.id ? "Sending..." : "Approve"}
+                    </button>
+                    <button
+                      onClick={() => rejectRequest(req.id)}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-400/60 rounded-lg text-xs font-medium hover:bg-red-500/20 hover:text-red-400 transition-all"
+                    >
+                      <XCircle className="w-3.5 h-3.5" />
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Show recently processed requests */}
+          {requests.filter((r) => r.status !== "pending").length > 0 && (
+            <details className="mt-4">
+              <summary className="text-xs text-white/20 cursor-pointer hover:text-white/40 transition-colors">
+                {requests.filter((r) => r.status !== "pending").length} processed requests
+              </summary>
+              <div className="mt-3 space-y-2">
+                {requests.filter((r) => r.status !== "pending").map((req) => (
+                  <div
+                    key={req.id}
+                    className="flex items-center gap-3 bg-white/[0.01] border border-white/[0.04] rounded-lg px-4 py-2.5 text-xs"
+                  >
+                    {req.status === "approved" ? (
+                      <Check className="w-3.5 h-3.5 text-emerald-400/50 shrink-0" />
+                    ) : (
+                      <XCircle className="w-3.5 h-3.5 text-red-400/30 shrink-0" />
+                    )}
+                    <span className="text-white/40">@{req.x_handle}</span>
+                    {req.name && <span className="text-white/15">({req.name})</span>}
+                    <span className={`ml-auto text-[10px] uppercase tracking-wider ${
+                      req.status === "approved" ? "text-emerald-400/40" : "text-red-400/30"
+                    }`}>
+                      {req.status}
+                    </span>
+                    {req.invite_code && (
+                      <span className="text-[10px] text-white/15 font-mono">{req.invite_code}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </details>
+          )}
+        </section>
 
         {/* ════════════════════ HOT POSTS MANAGEMENT ════════════════════ */}
         <section>
