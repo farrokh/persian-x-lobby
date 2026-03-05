@@ -83,6 +83,7 @@ export async function POST(req: NextRequest) {
   const joinUrl = `${baseUrl}/join?code=${encodeURIComponent(inviteCode)}`;
 
   try {
+    console.log("Sending invite email to:", request.email, "from:", process.env.EMAIL_FROM);
     await sendInviteEmail({
       to: request.email,
       handle: request.x_handle,
@@ -90,9 +91,10 @@ export async function POST(req: NextRequest) {
       inviteCode,
       joinUrl,
     });
+    console.log("Invite email sent successfully");
   } catch (e) {
     console.error("Failed to send invite email:", e);
-    return NextResponse.json({ error: "Approved but failed to send email" }, { status: 500 });
+    return NextResponse.json({ error: `Approved but failed to send email: ${e instanceof Error ? e.message : String(e)}` }, { status: 500 });
   }
 
   return NextResponse.json({ success: true, inviteCode });

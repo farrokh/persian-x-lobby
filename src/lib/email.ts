@@ -19,7 +19,7 @@ interface InviteData {
 }
 
 export async function sendInviteEmail({ to, handle, name, inviteCode, joinUrl }: InviteData) {
-  await getResend().emails.send({
+  const result = await getResend().emails.send({
     from: process.env.EMAIL_FROM || "X Guild <noreply@example.com>",
     to,
     subject: "Your X Guild Invite",
@@ -45,6 +45,8 @@ export async function sendInviteEmail({ to, handle, name, inviteCode, joinUrl }:
       </div>
     `,
   });
+  console.log("Resend invite response:", JSON.stringify(result));
+  return result;
 }
 
 export async function sendDigestEmail({ memberEmail, memberHandle, unfollowed }: DigestData) {
