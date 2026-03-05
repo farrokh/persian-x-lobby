@@ -24,9 +24,9 @@ export async function GET() {
   // Get all members
   const { data: allMembers } = await db
     .from("members")
-    .select("id, x_handle, display_name");
+    .select("id, x_handle, display_name, joined_at");
 
-  const allHandles = (allMembers || []).map((m) => m.x_handle);
+  const members = allMembers || [];
 
   // Get who I follow
   const { data: myFollows } = await db
@@ -36,21 +36,21 @@ export async function GET() {
 
   const myFollowedHandles = new Set((myFollows || []).map((f) => f.following_x_handle));
 
-  // Who I need to follow (group members I don't follow, excluding myself)
-  const needToFollow = allHandles.filter(
-    (h) => h !== member.x_handle && !myFollowedHandles.has(h)
-  );
+  // Who I need to follow
+  const needToFollow = members
+    .filter((m) => m.x_handle !== member.x_handle && !myFollowedHandles.has(m.x_handle))
+    .map((m) => ({ x_handle: m.x_handle, display_name: m.display_name }));
 
-  // Who hasn't followed me (members whose follow list doesn't include my handle)
+  // Who hasn't followed me
   const { data: followersOfMe } = await db
     .from("follow_relationships")
     .select("follower_id")
     .eq("following_x_handle", member.x_handle);
 
   const followerIds = new Set((followersOfMe || []).map((f) => f.follower_id));
-  const notFollowingYou = (allMembers || [])
+  const notFollowingYou = members
     .filter((m) => m.id !== member.id && !followerIds.has(m.id))
-    .map((m) => m.x_handle);
+    .map((m) => ({ x_handle: m.x_handle, display_name: m.display_name }));
 
   // Last sync
   const { data: lastSyncLog } = await db
@@ -61,16 +61,45 @@ export async function GET() {
     .limit(1)
     .single();
 
-  const followingGroupMembers = allHandles.filter(
-    (h) => h !== member.x_handle && myFollowedHandles.has(h)
+  const followingGroupMembers = members.filter(
+    (m) => m.x_handle !== member.x_handle && myFollowedHandles.has(m.x_handle)
   ).length;
 
+  // Hot posts (graceful fallback if table doesn't exist yet)
+  let hotPosts: Array<{
+    id: string;
+    x_post_url: string;
+    author_handle: string;
+    content_preview: string;
+    likes: number;
+    retweets: number;
+    created_at: string;
+  }> = [];
+  try {
+    const { data: posts } = await db
+      .from("hot_posts")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(6);
+    hotPosts = posts || [];
+  } catch {
+    // Table may not exist yet
+  }
+
+  // All members for spotlight
+  const allMemberHandles = members.map((m) => ({
+    x_handle: m.x_handle,
+    display_name: m.display_name,
+  }));
+
   return NextResponse.json({
-    member: { x_handle: member.x_handle, display_name: member.display_name },
+    member: { x_handle: member.x_handle, display_name: member.display_name, isAdmin: member.is_admin },
     needToFollow,
     notFollowingYou,
     lastSync: lastSyncLog?.synced_at || null,
-    totalMembers: allHandles.length,
+    totalMembers: members.length,
     followingCount: followingGroupMembers,
+    hotPosts,
+    allMembers: allMemberHandles,
   });
 }

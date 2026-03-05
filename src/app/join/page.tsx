@@ -37,69 +37,82 @@ export default function JoinPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-[#0a0a0a] via-[#111827] to-[#0a0a0a]">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-[#070d1b]">
+      {/* Subtle noise texture */}
+      <div className="fixed inset-0 pointer-events-none opacity-[0.03]" style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+        backgroundRepeat: "repeat",
+      }} />
+
+      <div className="relative z-10 w-full max-w-md">
         <div className="mb-8">
-          <Link href="/" className="text-gray-500 hover:text-white transition-colors text-sm">
+          <Link href="/x-lobby" className="text-white/20 hover:text-white/50 transition-colors text-sm">
             &larr; Back
           </Link>
-          <h1 className="text-3xl font-bold text-white mt-4">Join the Lobby</h1>
-          <p className="text-gray-400 mt-2">Enter your details to become a member.</p>
+
+          <div className="mt-6 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C8A951] to-[#8B6914] flex items-center justify-center">
+              <span className="text-white text-lg">&#10022;</span>
+            </div>
+          </div>
+
+          <h1 className="text-3xl font-bold text-white tracking-tight">Join the Guild</h1>
+          <p className="text-white/35 mt-2">Enter your details to become a member.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">X Handle</label>
+            <label className="block text-xs text-white/30 uppercase tracking-[0.12em] font-medium mb-1.5">X Handle</label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">@</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20">@</span>
               <input
                 type="text"
                 required
                 placeholder="yourhandle"
                 value={form.x_handle}
                 onChange={(e) => setForm({ ...form, x_handle: e.target.value })}
-                className="w-full pl-8 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:border-white/30 transition-colors"
+                className="w-full pl-9 pr-4 py-3 bg-white/[0.03] border border-white/[0.06] rounded-xl text-white placeholder-white/15 focus:outline-none focus:border-[#C8A951]/30 transition-colors"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+            <label className="block text-xs text-white/30 uppercase tracking-[0.12em] font-medium mb-1.5">Email</label>
             <input
               type="email"
               required
               placeholder="you@example.com"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:border-white/30 transition-colors"
+              className="w-full px-4 py-3 bg-white/[0.03] border border-white/[0.06] rounded-xl text-white placeholder-white/15 focus:outline-none focus:border-[#C8A951]/30 transition-colors"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Display Name (optional)</label>
+            <label className="block text-xs text-white/30 uppercase tracking-[0.12em] font-medium mb-1.5">Display Name <span className="text-white/15">(optional)</span></label>
             <input
               type="text"
               placeholder="Your Name"
               value={form.display_name}
               onChange={(e) => setForm({ ...form, display_name: e.target.value })}
-              className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:border-white/30 transition-colors"
+              className="w-full px-4 py-3 bg-white/[0.03] border border-white/[0.06] rounded-xl text-white placeholder-white/15 focus:outline-none focus:border-[#C8A951]/30 transition-colors"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Invite Code</label>
+            <label className="block text-xs text-white/30 uppercase tracking-[0.12em] font-medium mb-1.5">Invite Code</label>
             <input
               type="text"
               required
               placeholder="Enter your invite code"
               value={form.invite_code}
               onChange={(e) => setForm({ ...form, invite_code: e.target.value })}
-              className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:border-white/30 transition-colors"
+              className="w-full px-4 py-3 bg-white/[0.03] border border-white/[0.06] rounded-xl text-white placeholder-white/15 focus:outline-none focus:border-[#C8A951]/30 transition-colors"
             />
           </div>
 
           {error && (
-            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
               {error}
             </div>
           )}
@@ -107,15 +120,15 @@ export default function JoinPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 bg-white text-black font-semibold rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 bg-[#C8A951] text-[#0B1120] font-semibold rounded-xl hover:bg-[#dbbf6a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Joining..." : "Join"}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-gray-500">
+        <p className="mt-6 text-center text-sm text-white/25">
           Already a member?{" "}
-          <Link href="/login" className="text-white hover:underline">
+          <Link href="/login" className="text-[#C8A951]/70 hover:text-[#C8A951] transition-colors">
             Sign in
           </Link>
         </p>

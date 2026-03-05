@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import GuildNav from "@/components/guild-nav";
 
 interface Member {
   id: string;
@@ -48,11 +48,8 @@ export default function ManualSyncPage() {
     }
 
     try {
-      // Get token from cookie via API
-      const tokenRes = await fetch("/api/sync-info");
-      const tokenData = await tokenRes.json();
+      await fetch("/api/sync-info");
 
-      // We need to extract the token from the bookmarklet URL - instead use a direct cookie-based endpoint
       const res = await fetch("/api/sync-manual", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -73,39 +70,43 @@ export default function ManualSyncPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="text-gray-400">Loading members...</div>
+      <div className="min-h-screen bg-[#070d1b] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-[#C8A951]/20 border-t-[#C8A951] rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
-      <nav className="border-b border-white/10 px-6 py-4">
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <Link href="/dashboard" className="font-bold text-lg">Persian X Lobby</Link>
-          <Link href="/sync" className="text-gray-400 hover:text-white transition-colors text-sm">
-            &larr; Back to Sync
-          </Link>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-[#070d1b] text-white">
+      <GuildNav />
 
       <main className="max-w-3xl mx-auto px-6 py-10">
-        <h1 className="text-2xl font-bold mb-2">Manual Sync</h1>
-        <p className="text-gray-400 mb-6">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#C8A951]/80 mb-3">
+          Manual
+        </p>
+        <h1 className="text-3xl font-bold tracking-tight mb-2">Manual Sync</h1>
+        <p className="text-white/40 mb-6">
           Check the members you follow, or paste a list of handles.
         </p>
 
         <div className="flex gap-2 mb-6">
           <button
             onClick={() => setPasteMode(false)}
-            className={`px-4 py-2 rounded-lg text-sm transition-colors ${!pasteMode ? "bg-white text-black" : "bg-white/10 text-gray-400"}`}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              !pasteMode
+                ? "bg-[#C8A951] text-[#0B1120]"
+                : "bg-white/[0.05] border border-white/[0.08] text-white/40 hover:text-white/60"
+            }`}
           >
             Checklist
           </button>
           <button
             onClick={() => setPasteMode(true)}
-            className={`px-4 py-2 rounded-lg text-sm transition-colors ${pasteMode ? "bg-white text-black" : "bg-white/10 text-gray-400"}`}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              pasteMode
+                ? "bg-[#C8A951] text-[#0B1120]"
+                : "bg-white/[0.05] border border-white/[0.08] text-white/40 hover:text-white/60"
+            }`}
           >
             Paste Handles
           </button>
@@ -118,19 +119,19 @@ export default function ManualSyncPage() {
               onChange={(e) => setPasteText(e.target.value)}
               placeholder="Paste handles, one per line or comma-separated&#10;@handle1&#10;@handle2&#10;handle3"
               rows={10}
-              className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white placeholder-gray-600 focus:outline-none focus:border-white/30 font-mono text-sm"
+              className="w-full bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 text-white placeholder-white/15 focus:outline-none focus:border-[#C8A951]/30 font-mono text-sm transition-colors"
             />
           </div>
         ) : (
           <div className="mb-6">
-            <button onClick={toggleAll} className="text-sm text-gray-400 hover:text-white mb-3 transition-colors">
+            <button onClick={toggleAll} className="text-sm text-white/25 hover:text-white/50 mb-3 transition-colors">
               {checked.size === members.length ? "Uncheck all" : "Check all"}
             </button>
             <div className="space-y-2 max-h-[60vh] overflow-y-auto">
               {members.map((m) => (
                 <label
                   key={m.id}
-                  className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg p-3 cursor-pointer hover:bg-white/10 transition-colors"
+                  className="flex items-center gap-3 bg-white/[0.03] border border-white/[0.06] rounded-xl p-3.5 cursor-pointer hover:bg-white/[0.05] hover:border-white/[0.1] transition-all"
                 >
                   <input
                     type="checkbox"
@@ -141,10 +142,10 @@ export default function ManualSyncPage() {
                       else next.add(m.x_handle);
                       setChecked(next);
                     }}
-                    className="w-4 h-4 rounded accent-emerald-500"
+                    className="w-4 h-4 rounded accent-[#C8A951]"
                   />
-                  <span className="text-gray-300">@{m.x_handle}</span>
-                  {m.display_name && <span className="text-gray-600 text-sm">({m.display_name})</span>}
+                  <span className="text-white/60">@{m.x_handle}</span>
+                  {m.display_name && <span className="text-white/20 text-sm">({m.display_name})</span>}
                 </label>
               ))}
             </div>
@@ -152,7 +153,11 @@ export default function ManualSyncPage() {
         )}
 
         {result && (
-          <div className={`p-3 rounded-lg mb-4 text-sm ${result.startsWith("Error") ? "bg-red-500/10 border border-red-500/20 text-red-400" : "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"}`}>
+          <div className={`p-4 rounded-xl mb-4 text-sm ${
+            result.startsWith("Error")
+              ? "bg-red-500/10 border border-red-500/20 text-red-400"
+              : "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
+          }`}>
             {result}
           </div>
         )}
@@ -160,7 +165,7 @@ export default function ManualSyncPage() {
         <button
           onClick={handleSubmit}
           disabled={submitting}
-          className="w-full py-3 bg-white text-black font-semibold rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+          className="w-full py-3 bg-[#C8A951] text-[#0B1120] font-semibold rounded-xl hover:bg-[#dbbf6a] transition-colors disabled:opacity-50"
         >
           {submitting ? "Syncing..." : "Sync"}
         </button>
