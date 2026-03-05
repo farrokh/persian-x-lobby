@@ -1,7 +1,8 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-const emailFrom = process.env.EMAIL_FROM || "Persian X Lobby <noreply@example.com>";
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 interface DigestData {
   memberEmail: string;
@@ -16,8 +17,8 @@ export async function sendDigestEmail({ memberEmail, memberHandle, unfollowed }:
     .map((handle) => `<li><a href="https://x.com/${handle}">@${handle}</a></li>`)
     .join("\n");
 
-  await resend.emails.send({
-    from: emailFrom,
+  await getResend().emails.send({
+    from: process.env.EMAIL_FROM || "Persian X Lobby <noreply@example.com>",
     to: memberEmail,
     subject: `Persian X Lobby: ${unfollowed.length} members to follow`,
     html: `
